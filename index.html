@@ -4,74 +4,606 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Convertir Imagenes a WebP</title>
+  <style>
+    :root {
+      --bg: #f8f9fa;
+      --primary: #007bff;
+      --ink: #101010;
+      --ok: #16a34a;
+      --warn: #f59e0b;
+      --bad: #dc2626;
+    }
 
-  <!-- Agregar Bootstrap desde CDN -->
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet" />
-  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
-</head>
-<body>
+    * {
+      box-sizing: border-box;
+    }
 
-  <!-- Navbar -->
-  <nav class="navbar navbar-expand-lg navbar-light bg-light">
-    <div class="container-fluid">
-      <a class="navbar-brand" href="#">Convertidor de Imágenes</a>
-    </div>
-  </nav>
+    body {
+      margin: 0;
+      font-family: "Segoe UI", Arial, sans-serif;
+      background: var(--bg);
+      color: var(--ink);
+    }
 
-  <!-- Contenedor Principal -->
-  <div class="container my-5">
-    <div class="row">
-      <div class="col-md-12 text-center">
-        <h2>Bienvenido al Convertidor de Imágenes a WebP</h2>
-        <p>Sube una imagen en formato JPG para convertirla a WebP</p>
+    .page {
+      min-height: 100vh;
+      display: grid;
+      place-items: center;
+      padding: 2rem 1rem;
+    }
 
-        <!-- Formulario para cargar la imagen -->
-        <input type="file" id="imagenInput" class="form-control mb-3" />
-        <button class="btn btn-primary" onclick="convertirImagen()">Convertir</button>
+    .tool-card {
+      width: min(1100px, 100%);
+      border: 2px solid #101010;
+      border-radius: 18px;
+      background: #ffffff;
+      box-shadow: 6px 6px 0 #101010;
+      padding: 1.5rem;
+    }
 
-        <!-- Mensajes del sistema -->
-        <div id="mensaje" class="mt-3"></div>
-      </div>
-    </div>
-  </div>
+    .tool-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 0.75rem;
+      margin-bottom: 1rem;
+    }
 
-  <!-- Script para interacción -->
-  <script>
-    async function convertirImagen() {
-      const imagenInput = document.getElementById("imagenInput");
-      const formData = new FormData();
+    .tool-title {
+      margin: 0;
+      font-size: 1.35rem;
+    }
 
-      if (imagenInput.files.length > 0) {
-        // Mostrar mensaje de carga
-        document.getElementById("mensaje").textContent = "Cargando, por favor espera...";
+    .quality-chip {
+      border: 2px solid #101010;
+      border-radius: 999px;
+      padding: 0.35rem 0.75rem;
+      font-weight: 700;
+      min-width: 130px;
+      text-align: center;
+    }
 
-        formData.append("imagen", imagenInput.files[0]);
+    .dashboard {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 1rem;
+    }
 
-        try {
-          const response = await fetch("http://localhost:5000/convertir", {
-            method: "POST",
-            body: formData
-          });
+    .dropzone {
+      border: 3px dashed var(--primary);
+      border-radius: 14px;
+      min-height: 200px;
+      display: grid;
+      place-items: center;
+      text-align: center;
+      cursor: pointer;
+      transition: background 0.15s ease;
+      padding: 1rem;
+    }
 
-          const data = await response.json();
+    .dropzone.dragging {
+      background: #e6f1ff;
+    }
 
-          if (response.ok) {
-            document.getElementById("mensaje").textContent = `¡Éxito! Imagen convertida: ${data.output}`;
-            document.getElementById("mensaje").classList.add("text-success");
-          } else {
-            document.getElementById("mensaje").textContent = `Error: ${data.message}`;
-            document.getElementById("mensaje").classList.add("text-danger");
-          }
-        } catch (error) {
-          document.getElementById("mensaje").textContent = "Error en la conversión.";
-          document.getElementById("mensaje").classList.add("text-danger");
-        }
-      } else {
-        document.getElementById("mensaje").textContent = "No seleccionaste ninguna imagen.";
-        document.getElementById("mensaje").classList.add("text-warning");
+    .drop-icon {
+      font-size: 3rem;
+      line-height: 1;
+    }
+
+    .quality-control {
+      border: 2px solid #101010;
+      border-radius: 14px;
+      padding: 1rem;
+      background: #fff;
+    }
+
+    .quality-title {
+      margin: 0 0 0.75rem;
+      font-weight: 700;
+    }
+
+    .quality-wrap {
+      display: grid;
+      gap: 0.75rem;
+      grid-template-columns: 1fr 96px;
+      align-items: center;
+    }
+
+    #calidadInput {
+      width: 100%;
+      accent-color: var(--primary);
+      cursor: pointer;
+    }
+
+    .quality-knob {
+      width: 96px;
+      height: 96px;
+      border-radius: 999px;
+      border: 3px solid #101010;
+      display: grid;
+      place-items: center;
+      font-size: 1.2rem;
+      font-weight: 800;
+      color: #fff;
+    }
+
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(180px, 1fr));
+      gap: 0.75rem;
+    }
+
+    .stat {
+      border: 2px solid #101010;
+      border-radius: 12px;
+      padding: 0.75rem;
+      background: #fff;
+    }
+
+    .stat-label {
+      font-size: 0.8rem;
+      opacity: 0.8;
+      margin-bottom: 0.25rem;
+    }
+
+    .stat-value {
+      font-size: 1.1rem;
+      font-weight: 800;
+    }
+
+    .actions {
+      display: flex;
+      gap: 0.75rem;
+      flex-wrap: wrap;
+    }
+
+    .btn {
+      border: 2px solid #101010;
+      border-radius: 10px;
+      padding: 0.65rem 1rem;
+      font-weight: 800;
+      cursor: pointer;
+      background: #fff;
+    }
+
+    .btn-primary {
+      background: var(--primary);
+      color: #fff;
+    }
+
+    .btn:disabled {
+      cursor: not-allowed;
+      opacity: 0.5;
+    }
+
+    .progress-wrap {
+      border: 2px solid #101010;
+      border-radius: 12px;
+      overflow: hidden;
+      background: #fff;
+      height: 14px;
+    }
+
+    .progress-bar {
+      height: 100%;
+      width: 0%;
+      background: var(--primary);
+      transition: width 0.2s ease;
+    }
+
+    .gallery {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
+      gap: 0.75rem;
+      margin-top: 0.35rem;
+    }
+
+    .thumb-card {
+      border: 2px solid #101010;
+      border-radius: 12px;
+      padding: 0.5rem;
+      background: #fff;
+    }
+
+    .thumb-card img {
+      width: 100%;
+      height: 120px;
+      object-fit: cover;
+      border-radius: 8px;
+      border: 2px solid #101010;
+      background: #f2f2f2;
+    }
+
+    .thumb-name {
+      margin-top: 0.4rem;
+      font-size: 0.82rem;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .badge {
+      margin-top: 0.3rem;
+      display: inline-block;
+      border: 2px solid #101010;
+      border-radius: 999px;
+      padding: 0.15rem 0.45rem;
+      font-size: 0.73rem;
+      font-weight: 700;
+      background: #fff;
+    }
+
+    .message {
+      margin-top: 0.5rem;
+      font-weight: 700;
+      min-height: 1.2rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .loader {
+      width: 14px;
+      height: 14px;
+      border: 2px solid #c9d2dc;
+      border-top-color: var(--primary);
+      border-radius: 999px;
+      animation: spin 0.8s linear infinite;
+      flex: 0 0 auto;
+    }
+
+    @keyframes spin {
+      to {
+        transform: rotate(360deg);
       }
     }
-  </script>
 
+    .text-ok { color: var(--ok); }
+    .text-info { color: var(--primary); }
+    .text-bad { color: var(--bad); }
+
+    .hidden-input {
+      display: none;
+    }
+
+    @media (max-width: 700px) {
+      .stats {
+        grid-template-columns: 1fr;
+      }
+      .quality-wrap {
+        grid-template-columns: 1fr;
+      }
+      .quality-knob {
+        width: 82px;
+        height: 82px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="page">
+    <section class="tool-card">
+      <div class="tool-header">
+        <h1 class="tool-title">Dashboard de Conversión WebP por Lotes</h1>
+        <div class="quality-chip" id="qualityChip">Calidad 80</div>
+      </div>
+
+      <div class="dashboard">
+        <div id="dropzone" class="dropzone">
+          <div>
+            <div class="drop-icon">⬆</div>
+            <h2>Arrastra imágenes aquí</h2>
+            <p>o haz clic para seleccionar varias imágenes</p>
+          </div>
+        </div>
+
+        <input type="file" id="imagenInput" class="hidden-input" accept="image/*" multiple />
+
+        <div class="quality-control">
+          <p class="quality-title">Nivel de compresión / calidad estimada</p>
+          <div class="quality-wrap">
+            <input type="range" id="calidadInput" min="1" max="100" value="80" />
+            <div class="quality-knob" id="qualityKnob">80</div>
+          </div>
+        </div>
+
+        <div class="stats">
+          <div class="stat">
+            <div class="stat-label">Imágenes cargadas</div>
+            <div class="stat-value" id="countValue">0</div>
+          </div>
+          <div class="stat">
+            <div class="stat-label">Peso original total</div>
+            <div class="stat-value" id="originalValue">0 KB</div>
+          </div>
+          <div class="stat">
+            <div class="stat-label">Ahorro estimado</div>
+            <div class="stat-value" id="savingValue">0 KB (0%)</div>
+          </div>
+        </div>
+
+        <div class="actions">
+          <button id="convertBtn" class="btn btn-primary" disabled>Convertir y descargar ZIP</button>
+          <button id="clearBtn" class="btn" disabled>Limpiar</button>
+        </div>
+
+        <div class="progress-wrap">
+          <div id="progressBar" class="progress-bar"></div>
+        </div>
+        <div id="mensaje" class="message"></div>
+
+        <div id="gallery" class="gallery"></div>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    const dropzone = document.getElementById("dropzone");
+    const fileInput = document.getElementById("imagenInput");
+    const qualityInput = document.getElementById("calidadInput");
+    const qualityKnob = document.getElementById("qualityKnob");
+    const qualityChip = document.getElementById("qualityChip");
+    const convertBtn = document.getElementById("convertBtn");
+    const clearBtn = document.getElementById("clearBtn");
+    const gallery = document.getElementById("gallery");
+    const message = document.getElementById("mensaje");
+    const progressBar = document.getElementById("progressBar");
+    const countValue = document.getElementById("countValue");
+    const originalValue = document.getElementById("originalValue");
+    const savingValue = document.getElementById("savingValue");
+
+    let selectedFiles = [];
+    let estimates = new Map();
+
+    function formatBytes(bytes) {
+      if (bytes < 1024) return `${bytes} B`;
+      if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+      return `${(bytes / (1024 * 1024)).toFixed(2)} MB`;
+    }
+
+    function qualityColor(value) {
+      const pct = value / 100;
+      const r = Math.round(220 - (120 * pct));
+      const g = Math.round(50 + (130 * pct));
+      const b = 60;
+      return `rgb(${r}, ${g}, ${b})`;
+    }
+
+    function updateQualityUI() {
+      const value = Number(qualityInput.value);
+      qualityKnob.textContent = String(value);
+      qualityChip.textContent = `Calidad ${value}`;
+      const color = qualityColor(value);
+      qualityKnob.style.background = color;
+      qualityChip.style.background = color;
+      qualityChip.style.color = "#fff";
+      if (selectedFiles.length > 0) {
+        estimateAll();
+      }
+    }
+
+    function setMessage(text, type = "info", loading = false) {
+      message.innerHTML = `${loading ? '<span class="loader" aria-hidden="true"></span>' : ""}<span>${text}</span>`;
+      message.className = "message";
+      if (type === "ok") message.classList.add("text-ok");
+      if (type === "bad") message.classList.add("text-bad");
+      if (type === "info") message.classList.add("text-info");
+    }
+
+    function getPrimaryApiUrl() {
+      return `${window.location.origin}/convertir`;
+    }
+
+    function getFallbackApiUrl() {
+      return "http://localhost:5000/convertir";
+    }
+
+    async function postConvert(formData) {
+      const primaryUrl = getPrimaryApiUrl();
+      const response = await fetch(primaryUrl, {
+        method: "POST",
+        body: formData
+      });
+
+      if (response.status !== 405) {
+        return response;
+      }
+
+      const fallbackUrl = getFallbackApiUrl();
+      if (primaryUrl === fallbackUrl) {
+        return response;
+      }
+
+      return fetch(fallbackUrl, {
+        method: "POST",
+        body: formData
+      });
+    }
+
+    async function readErrorMessage(response) {
+      const contentType = response.headers.get("content-type") || "";
+      if (contentType.includes("application/json")) {
+        try {
+          const data = await response.json();
+          return data.message || `Error HTTP ${response.status}`;
+        } catch (error) {
+          return `Error HTTP ${response.status}`;
+        }
+      }
+
+      const text = await response.text();
+      if (text && text.trim().length > 0) {
+        return text.slice(0, 160);
+      }
+      return `Error HTTP ${response.status}`;
+    }
+
+    async function estimateWebPSize(file, quality) {
+      const bitmap = await createImageBitmap(file);
+      const canvas = document.createElement("canvas");
+      canvas.width = bitmap.width;
+      canvas.height = bitmap.height;
+      const ctx = canvas.getContext("2d");
+      ctx.drawImage(bitmap, 0, 0);
+      const blob = await new Promise((resolve) => {
+        canvas.toBlob(resolve, "image/webp", quality / 100);
+      });
+      bitmap.close();
+      return blob ? blob.size : file.size;
+    }
+
+    async function estimateAll() {
+      if (selectedFiles.length === 0) return;
+
+      progressBar.style.width = "0%";
+      estimates = new Map();
+      const quality = Number(qualityInput.value);
+
+      for (let i = 0; i < selectedFiles.length; i += 1) {
+        const file = selectedFiles[i];
+        try {
+          const estSize = await estimateWebPSize(file, quality);
+          estimates.set(file.name + file.size, estSize);
+        } catch (error) {
+          estimates.set(file.name + file.size, file.size);
+        }
+        progressBar.style.width = `${Math.round(((i + 1) / selectedFiles.length) * 100)}%`;
+      }
+
+      renderGallery();
+      renderStats();
+      setMessage("Estimación lista. Puedes convertir y descargar.", "info");
+    }
+
+    function renderStats() {
+      const totalOriginal = selectedFiles.reduce((acc, file) => acc + file.size, 0);
+      const totalEstimated = selectedFiles.reduce((acc, file) => {
+        const key = file.name + file.size;
+        return acc + (estimates.get(key) || file.size);
+      }, 0);
+      const saved = Math.max(totalOriginal - totalEstimated, 0);
+      const percent = totalOriginal > 0 ? (saved / totalOriginal) * 100 : 0;
+
+      countValue.textContent = String(selectedFiles.length);
+      originalValue.textContent = formatBytes(totalOriginal);
+      savingValue.textContent = `${formatBytes(saved)} (${percent.toFixed(1)}%)`;
+    }
+
+    function renderGallery() {
+      gallery.innerHTML = "";
+      selectedFiles.forEach((file) => {
+        const url = URL.createObjectURL(file);
+        const card = document.createElement("article");
+        card.className = "thumb-card";
+        const key = file.name + file.size;
+        const estimated = estimates.get(key) || file.size;
+
+        card.innerHTML = `
+          <img src="${url}" alt="${file.name}">
+          <div class="thumb-name">${file.name}</div>
+          <span class="badge">Original: ${formatBytes(file.size)}</span>
+          <span class="badge">WebP est.: ${formatBytes(estimated)}</span>
+        `;
+        gallery.appendChild(card);
+      });
+    }
+
+    function toggleActions() {
+      const enabled = selectedFiles.length > 0;
+      convertBtn.disabled = !enabled;
+      clearBtn.disabled = !enabled;
+    }
+
+    async function handleFiles(fileList) {
+      selectedFiles = Array.from(fileList).filter((file) => file.type.startsWith("image/"));
+      toggleActions();
+      if (selectedFiles.length === 0) {
+        renderGallery();
+        renderStats();
+        setMessage("No hay imágenes válidas seleccionadas.", "bad");
+        progressBar.style.width = "0%";
+        return;
+      }
+      setMessage("Analizando imágenes para estimar compresión...", "info", true);
+      await estimateAll();
+    }
+
+    async function convertirImagenes() {
+      if (selectedFiles.length === 0) {
+        setMessage("Selecciona imágenes antes de convertir.", "bad");
+        return;
+      }
+
+      const formData = new FormData();
+      selectedFiles.forEach((file) => formData.append("imagenes", file));
+      formData.append("quality", qualityInput.value);
+
+      setMessage("Convirtiendo en servidor y preparando ZIP...", "info", true);
+      progressBar.style.width = "10%";
+      convertBtn.disabled = true;
+
+      try {
+        const response = await postConvert(formData);
+
+        progressBar.style.width = "85%";
+        if (!response.ok) {
+          const errorMessage = await readErrorMessage(response);
+          throw new Error(errorMessage);
+        }
+
+        const blob = await response.blob();
+        const url = URL.createObjectURL(blob);
+        const anchor = document.createElement("a");
+        anchor.href = url;
+        anchor.download = "imagenes_convertidas_webp.zip";
+        anchor.click();
+        URL.revokeObjectURL(url);
+        progressBar.style.width = "100%";
+        setMessage("Conversión completada. ZIP descargado.", "ok");
+      } catch (error) {
+        progressBar.style.width = "0%";
+        setMessage(`Error: ${error.message}`, "bad");
+      } finally {
+        convertBtn.disabled = false;
+      }
+    }
+
+    function clearAll() {
+      selectedFiles = [];
+      estimates = new Map();
+      fileInput.value = "";
+      renderGallery();
+      renderStats();
+      toggleActions();
+      setMessage("Lista limpiada.", "info");
+      progressBar.style.width = "0%";
+    }
+
+    dropzone.addEventListener("click", () => fileInput.click());
+    fileInput.addEventListener("change", async (event) => {
+      await handleFiles(event.target.files);
+    });
+
+    dropzone.addEventListener("dragover", (event) => {
+      event.preventDefault();
+      dropzone.classList.add("dragging");
+    });
+    dropzone.addEventListener("dragleave", () => {
+      dropzone.classList.remove("dragging");
+    });
+    dropzone.addEventListener("drop", async (event) => {
+      event.preventDefault();
+      dropzone.classList.remove("dragging");
+      await handleFiles(event.dataTransfer.files);
+    });
+
+    qualityInput.addEventListener("input", updateQualityUI);
+    convertBtn.addEventListener("click", convertirImagenes);
+    clearBtn.addEventListener("click", clearAll);
+
+    updateQualityUI();
+    renderStats();
+  </script>
 </body>
 </html>
